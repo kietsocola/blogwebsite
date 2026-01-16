@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: blog-postgres
+    environment:
+      POSTGRES_DB: blog
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blog-network
+    restart: unless-stopped
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: ./blog-backend
+      dockerfile: Dockerfile
+    container_name: blog-backend
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/blog
+      DB_USERNAME: postgres
+      DB_PASSWORD: 123
+      SERVER_PORT: 8080
+      JWT_SECRET: 169192608811f9989375cbffa8388b1f
+      CORS_ORIGINS: http://localhost:3000,http://frontend:3000
+    ports:
+      - "8889:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - blog-network
+    restart: unless-stopped
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./blog-frontend
+      dockerfile: Dockerfile
+    container_name: blog-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+      NODE_ENV: production
+    ports:
+      - "3002:3000"
+    depends_on:
+      - backend
+    networks:
+      - blog-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  blog-network:
+    driver: bridge

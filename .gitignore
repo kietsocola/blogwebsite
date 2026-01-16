@@ -1,0 +1,90 @@
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE Files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-*
+.vs/
+
+# Node.js / Frontend
+blog-frontend/node_modules/
+blog-frontend/.next/
+blog-frontend/out/
+blog-frontend/build/
+blog-frontend/dist/
+blog-frontend/.env*.local
+blog-frontend/.env.production
+blog-frontend/.pnp
+blog-frontend/.pnp.js
+blog-frontend/npm-debug.log*
+blog-frontend/yarn-debug.log*
+blog-frontend/yarn-error.log*
+blog-frontend/.vercel
+
+# Java / Backend
+blog-backend/target/
+blog-backend/.mvn/
+blog-backend/mvnw
+blog-backend/mvnw.cmd
+blog-backend/*.iml
+blog-backend/.idea/
+blog-backend/out/
+blog-backend/.gradle/
+blog-backend/build/
+blog-backend/!**/src/main/**/target/
+blog-backend/!**/src/test/**/target/
+blog-backend/!**/src/main/**/build/
+blog-backend/!**/src/test/**/build/
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Environment Variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production.local
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary Files
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# Build outputs
+dist/
+build/
+out/
+
+# Coverage reports
+coverage/
+*.cover
+.nyc_output/
+.coverage
+
+# Package manager locks (optional - uncomment if you want to ignore)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

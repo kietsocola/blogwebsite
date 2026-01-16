@@ -1,0 +1,461 @@
+# TÀI LIỆU YÊU CẦU HỆ THỐNG - BLOG WEBSITE MVP
+
+**Tech Stack:** Spring Boot (Backend) + Next.js (Frontend)
+
+---
+
+## 1. FUNCTIONAL REQUIREMENTS (Yêu cầu chức năng)
+
+### 1.1. Quản lý người dùng (User Management)
+
+**FR-1.1: Đăng ký tài khoản**
+- Đăng ký bằng email + password
+- Validate:
+  - Email format hợp lệ và unique
+  - Password tối thiểu 8 ký tự (có chữ hoa, chữ thường, số)
+  - Username 3-20 ký tự, không có ký tự đặc biệt
+- Response: success message hoặc error details
+
+**FR-1.2: Đăng nhập**
+- Login bằng email/username + password
+- Trả về JWT token (access token)
+- Token expire sau 24 giờ
+- Response: token + user info (id, username, email, role)
+
+**FR-1.3: Đăng xuất**
+- Client xóa token (stateless)
+
+**FR-1.4: Phân quyền**
+- **ADMIN**: Quản lý tất cả posts, users, categories
+- **AUTHOR**: Tạo và quản lý posts của mình
+- Default role khi đăng ký: AUTHOR
+
+### 1.2. Quản lý bài viết (Post Management)
+
+**FR-2.1: Tạo bài viết mới**
+- Input fields:
+  - Title (required, max 200 chars)
+  - Content (required, rich text/markdown)
+  - Slug (auto-generate từ title, có thể edit, unique)
+  - Category (required, select từ danh sách)
+  - Tags (optional, multi-select hoặc input separated by comma)
+  - Status: DRAFT hoặc PUBLISHED
+  - Featured image URL (optional)
+- Validation:
+  - Title không được trống
+  - Content tối thiểu 50 ký tự
+  - Slug unique
+- Auto-save draft mỗi 60 giây (localStorage trên client)
+
+**FR-2.2: Chỉnh sửa bài viết**
+- AUTHOR chỉnh sửa posts của mình
+- ADMIN chỉnh sửa tất cả posts
+- Có thể thay đổi status từ DRAFT → PUBLISHED và ngược lại
+- Validation giống tạo mới
+
+**FR-2.3: Xóa bài viết**
+- AUTHOR xóa posts của mình
+- ADMIN xóa tất cả posts
+- Hard delete (xóa vĩnh viễn luôn trong MVP)
+- Confirm dialog trước khi xóa
+
+**FR-2.4: Danh sách bài viết (Public)**
+- Hiển thị tất cả posts có status = PUBLISHED
+- Sắp xếp theo createdAt DESC (mới nhất trước)
+- Pagination: 10 posts/page
+- Mỗi post hiển thị:
+  - Title
+  - Excerpt (200 ký tự đầu của content)
+  - Author name
+  - Category name
+  - Created date
+  - Featured image (nếu có)
+
+**FR-2.5: Xem chi tiết bài viết (Public)**
+- Hiển thị full content với formatting
+- Metadata: title, author, category, tags, created date
+- Nút "Edit" nếu user là author hoặc admin
+
+**FR-2.6: Quản lý posts của tôi (My Posts)**
+- AUTHOR xem danh sách posts của mình (cả DRAFT và PUBLISHED)
+- ADMIN xem tất cả posts
+- Filter theo status: ALL, DRAFT, PUBLISHED
+- Action buttons: Edit, Delete
+
+### 1.3. Quản lý Categories
+
+**FR-3.1: CRUD Categories (ADMIN only)**
+- **Create**: Tên category + slug (auto-generate, có thể edit)
+- **Read**: Danh sách tất cả categories
+- **Update**: Sửa tên và slug
+- **Delete**: Xóa nếu không có post nào đang dùng
+
+**FR-3.2: Xem posts theo category (Public)**
+- Click vào category → hiển thị danh sách posts thuộc category đó
+- Pagination tương tự danh sách posts
+
+### 1.4. Quản lý Tags
+
+**FR-4.1: Tự động tạo tags**
+- Khi tạo/edit post, nếu tag chưa tồn tại → tự động tạo mới
+- Tag có: name, slug (auto-generate)
+
+**FR-4.2: Xem posts theo tag (Public)**
+- Click vào tag → hiển thị danh sách posts có tag đó
+- Pagination tương tự
+
+### 1.5. Tìm kiếm
+
+**FR-5.1: Search posts (Public)**
+- Search trong title và content
+- Input: search keyword
+- Kết quả: danh sách posts match với keyword
+- Pagination: 10 posts/page
+
+### 1.6. Dashboard Admin
+
+**FR-6.1: Thống kê cơ bản**
+- Card hiển thị:
+  - Tổng số posts
+  - Tổng số users
+  - Tổng số categories
+  - Tổng số tags
+
+**FR-6.2: Quản lý users (ADMIN only)**
+- Danh sách users: id, username, email, role, created date
+- Action: Xóa user (hard delete)
+- Không thể xóa chính mình
+
+---
+
+## 2. NON-FUNCTIONAL REQUIREMENTS (Yêu cầu phi chức năng)
+
+### 2.1. Performance
+
+**NFR-1.1: Response Time**
+- API response: < 1 second cho 95% requests
+- Page load (Next.js SSR): < 2 seconds
+- Client-side navigation: < 500ms
+
+**NFR-1.2: Database**
+- Index cho các trường: email, slug, status, createdAt
+- Query optimization với proper joins
+
+### 2.2. Security
+
+**NFR-2.1: Authentication**
+- Password hashing: BCrypt (strength 10)
+- JWT token với secret key từ environment variable
+- Token validation mọi protected endpoints
+
+**NFR-2.2: Authorization**
+- Check role-based permissions:
+  - `/api/admin/**` → chỉ ADMIN
+  - `/api/posts/my` → authenticated users
+  - Create/Update/Delete post → author hoặc admin
+- Response 403 Forbidden nếu unauthorized
+
+**NFR-2.3: Input Validation**
+- Backend validation với Bean Validation (@NotNull, @Size, @Email, etc.)
+- Frontend validation với form libraries (React Hook Form + Zod)
+- Sanitize HTML content để prevent XSS
+
+**NFR-2.4: API Security**
+- CORS configuration: chỉ accept từ frontend domain
+- Rate limiting: 100 requests/minute per IP (optional cho MVP)
+
+### 2.3. Reliability
+
+**NFR-3.1: Error Handling**
+- Backend trả về consistent error format:
+  ```json
+  {
+    "timestamp": "2026-01-16T10:30:00",
+    "status": 400,
+    "error": "Bad Request",
+    "message": "Email already exists",
+    "path": "/api/auth/register"
+  }
+  ```
+- Frontend hiển thị user-friendly error messages
+- Log errors vào console (MVP) hoặc file
+
+**NFR-3.2: Data Integrity**
+- Foreign key constraints trong database
+- Transaction cho operations phức tạp
+- Cascade delete cho relationships cần thiết
+
+### 2.4. Maintainability
+
+**NFR-4.1: Code Structure**
+- Backend: Layered architecture (Controller → Service → Repository)
+- Frontend: Component-based structure, reusable components
+- Naming conventions: camelCase (Java), kebab-case (URLs)
+
+**NFR-4.2: Documentation**
+- README.md với setup instructions
+- API documentation bằng Swagger/OpenAPI
+- Code comments cho logic phức tạp
+
+**NFR-4.3: Configuration**
+- Environment variables cho:
+  - Database credentials
+  - JWT secret key
+  - Server port
+  - CORS allowed origins
+- Không hardcode sensitive data
+
+### 2.5. Usability
+
+**NFR-5.1: Responsive Design**
+- Mobile-first approach
+- Breakpoints: mobile (< 768px), tablet (768-1024px), desktop (> 1024px)
+- Tailwind CSS cho styling
+
+**NFR-5.2: User Experience**
+- Loading states cho async operations
+- Success/error toast notifications
+- Confirmation dialogs cho destructive actions (delete)
+- Form validation feedback real-time
+
+**NFR-5.3: Editor**
+- Rich text editor: Quill / TipTap / ReactQuill
+- Hoặc Markdown editor: SimpleMDE
+- Preview mode
+
+### 2.6. SEO Basics
+
+**NFR-6.1: Meta Tags**
+- Dynamic meta tags cho mỗi post page:
+  - `<title>Post Title - Blog Name</title>`
+  - `<meta name="description" content="...">`
+- Open Graph tags cho social sharing
+
+**NFR-6.2: Clean URLs**
+- `/posts/[slug]` thay vì `/posts/[id]`
+- `/categories/[slug]`
+- `/tags/[slug]`
+
+---
+
+## 3. DATABASE SCHEMA
+
+### 3.1. Tables
+
+**users**
+```sql
+id: BIGINT (PK, AUTO_INCREMENT)
+username: VARCHAR(50) (UNIQUE, NOT NULL)
+email: VARCHAR(100) (UNIQUE, NOT NULL)
+password: VARCHAR(255) (NOT NULL) -- hashed
+role: ENUM('ADMIN', 'AUTHOR') (NOT NULL, DEFAULT 'AUTHOR')
+created_at: TIMESTAMP (DEFAULT CURRENT_TIMESTAMP)
+updated_at: TIMESTAMP (DEFAULT CURRENT_TIMESTAMP ON UPDATE)
+```
+
+**categories**
+```sql
+id: BIGINT (PK, AUTO_INCREMENT)
+name: VARCHAR(100) (UNIQUE, NOT NULL)
+slug: VARCHAR(100) (UNIQUE, NOT NULL)
+created_at: TIMESTAMP (DEFAULT CURRENT_TIMESTAMP)
+```
+
+**tags**
+```sql
+id: BIGINT (PK, AUTO_INCREMENT)
+name: VARCHAR(50) (UNIQUE, NOT NULL)
+slug: VARCHAR(50) (UNIQUE, NOT NULL)
+created_at: TIMESTAMP (DEFAULT CURRENT_TIMESTAMP)
+```
+
+**posts**
+```sql
+id: BIGINT (PK, AUTO_INCREMENT)
+title: VARCHAR(200) (NOT NULL)
+slug: VARCHAR(200) (UNIQUE, NOT NULL)
+content: TEXT (NOT NULL)
+featured_image: VARCHAR(500) (NULL)
+status: ENUM('DRAFT', 'PUBLISHED') (NOT NULL, DEFAULT 'DRAFT')
+author_id: BIGINT (FK -> users.id, NOT NULL)
+category_id: BIGINT (FK -> categories.id, NOT NULL)
+created_at: TIMESTAMP (DEFAULT CURRENT_TIMESTAMP)
+updated_at: TIMESTAMP (DEFAULT CURRENT_TIMESTAMP ON UPDATE)
+
+INDEX idx_slug (slug)
+INDEX idx_status (status)
+INDEX idx_created_at (created_at)
+INDEX idx_author_id (author_id)
+INDEX idx_category_id (category_id)
+```
+
+**post_tags** (Many-to-Many)
+```sql
+post_id: BIGINT (FK -> posts.id)
+tag_id: BIGINT (FK -> tags.id)
+PRIMARY KEY (post_id, tag_id)
+```
+
+### 3.2. Relationships
+
+- `users` 1---N `posts` (one user has many posts)
+- `categories` 1---N `posts` (one category has many posts)
+- `posts` N---N `tags` (many-to-many via post_tags)
+
+---
+
+## 4. API ENDPOINTS
+
+### 4.1. Authentication
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| POST | `/api/auth/register` | Public | Đăng ký user mới |
+| POST | `/api/auth/login` | Public | Đăng nhập |
+
+### 4.2. Posts
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| GET | `/api/posts` | Public | Danh sách posts (published) |
+| GET | `/api/posts/{slug}` | Public | Chi tiết post |
+| GET | `/api/posts/my` | Auth | Posts của user hiện tại |
+| POST | `/api/posts` | Auth | Tạo post mới |
+| PUT | `/api/posts/{id}` | Auth | Update post |
+| DELETE | `/api/posts/{id}` | Auth | Xóa post |
+| GET | `/api/posts/search?q={keyword}` | Public | Search posts |
+
+### 4.3. Categories
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| GET | `/api/categories` | Public | Danh sách categories |
+| GET | `/api/categories/{slug}/posts` | Public | Posts theo category |
+| POST | `/api/categories` | Admin | Tạo category |
+| PUT | `/api/categories/{id}` | Admin | Update category |
+| DELETE | `/api/categories/{id}` | Admin | Xóa category |
+
+### 4.4. Tags
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| GET | `/api/tags` | Public | Danh sách tags |
+| GET | `/api/tags/{slug}/posts` | Public | Posts theo tag |
+
+### 4.5. Admin
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| GET | `/api/admin/stats` | Admin | Thống kê dashboard |
+| GET | `/api/admin/users` | Admin | Danh sách users |
+| DELETE | `/api/admin/users/{id}` | Admin | Xóa user |
+
+---
+
+## 5. TECH STACK DETAILS
+
+### 5.1. Backend (Spring Boot)
+
+**Dependencies:**
+```xml
+- Spring Boot Starter Web
+- Spring Boot Starter Data JPA
+- Spring Boot Starter Security
+- Spring Boot Starter Validation
+- MySQL Connector / PostgreSQL Driver
+- Lombok
+- JWT (java-jwt hoặc jjwt)
+- SpringDoc OpenAPI (Swagger)
+```
+
+**Project Structure:**
+```
+src/main/java/com/blog
+├── config/          # Security, CORS config
+├── controller/      # REST controllers
+├── dto/             # Request/Response DTOs
+├── entity/          # JPA entities
+├── repository/      # JPA repositories
+├── service/         # Business logic
+├── security/        # JWT utils, UserDetailsService
+├── exception/       # Custom exceptions, Global exception handler
+└── BlogApplication.java
+```
+
+### 5.2. Frontend (Next.js)
+
+**Dependencies:**
+```json
+- next
+- react, react-dom
+- typescript
+- tailwindcss
+- axios / fetch
+- react-hook-form
+- zod (validation)
+- react-quill (editor)
+- react-hot-toast (notifications)
+```
+
+**Project Structure:**
+```
+src/
+├── app/                    # Next.js 14 App Router
+│   ├── (auth)/
+│   │   ├── login/page.tsx
+│   │   └── register/page.tsx
+│   ├── posts/
+│   │   ├── [slug]/page.tsx
+│   │   ├── new/page.tsx
+│   │   └── page.tsx
+│   ├── admin/
+│   │   └── dashboard/page.tsx
+│   └── layout.tsx
+├── components/             # Reusable components
+│   ├── layout/
+│   ├── post/
+│   └── ui/
+├── lib/                    # Utils, API client
+│   ├── api.ts
+│   ├── auth.ts
+│   └── utils.ts
+└── types/                  # TypeScript types
+```
+
+### 5.3. Database
+
+**Choice:** PostgreSQL
+
+### 7.3. Environment Variables
+
+**Backend (.env):**
+```
+DB_URL=jdbc:postgresql://...
+DB_USERNAME=...
+DB_PASSWORD=...
+JWT_SECRET=your-secret-key-min-256-bits
+CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+```
+
+**Frontend (.env.local):**
+```
+NEXT_PUBLIC_API_URL=http://localhost:8080/api
+```
+
+---
+
+## 8. FEATURES OUT OF SCOPE (MVP)
+
+Các tính năng này **KHÔNG** làm trong MVP:
+
+- ❌ Comment system
+- ❌ Like/Bookmark
+- ❌ Email notifications
+- ❌ Image upload (chỉ dùng URL)
+- ❌ OAuth login
+- ❌ Advanced analytics
+- ❌ Role: SUBSCRIBER
+- ❌ Soft delete
+- ❌ Version history
+- ❌ Scheduled posts
+- ❌ Draft auto-save backend
