@@ -58,9 +58,9 @@ export default function NewPostPage() {
         console.error('Failed to fetch categories:', error);
       }
     };
-authLoading, user, 
+
     fetchCategories();
-  }, [router]);
+  }, [authLoading, user, router]);
 
   const onSubmit = async (data: PostForm) => {
     setLoading(true);
