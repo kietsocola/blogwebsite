@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 123
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -34,7 +34,7 @@ services:
       DB_PASSWORD: 123
       SERVER_PORT: 8080
       JWT_SECRET: 169192608811f9989375cbffa8388b1f
-      CORS_ORIGINS: http://localhost:3000,http://frontend:3000
+      CORS_ORIGINS: http://localhost:3002,http://frontend:3000
     ports:
       - "8889:8080"
     depends_on:
@@ -51,7 +51,7 @@ services:
       dockerfile: Dockerfile
     container_name: blog-frontend
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8080
+      NEXT_PUBLIC_API_URL: http://localhost:8889
       NODE_ENV: production
     ports:
       - "3002:3000"
