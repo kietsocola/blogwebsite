@@ -49,9 +49,10 @@ services:
     build:
       context: ./blog-frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8889
     container_name: blog-frontend
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8889
       NODE_ENV: production
     ports:
       - "3002:3000"
