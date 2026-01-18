@@ -50,7 +50,7 @@ services:
       context: ./blog-frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://backend:8080
+        NEXT_PUBLIC_API_URL: http://localhost:8889
     container_name: blog-frontend
     environment:
       NODE_ENV: production
